@@ -10,7 +10,16 @@ interface Conditions {
 }
 
 export const getAll = async (conditions: Conditions = {}) => {
-    let asd: string[] | unknown =  await dbQuery.checkColumn({ table });
-    console.log(asd);
-    return asd
+    // let asd: string[] | unknown =  await dbQuery.checkColumn({ table });
+    // console.log(asd);
+    // return asd
+
+    const data = {
+        name: 'Inbound   ',
+        is_active: 1,
+        asd: 1
+    }
+
+    let asd = await dbQuery.insertData({ table, data });
+    return asd;
 }

@@ -4,7 +4,7 @@ import config from "./../config";
 import pool, { escape } from "./../config/pool";
 import * as redisHelper from "./../helpers/redis";
 import * as requestHelper from "./../helpers/request";
-import { MysqlError } from "mysql";
+import { QueryError, QueryResult, RowDataPacket, ResultSetHeader, FieldPacket } from "mysql2";
 
 const { timezone, database, redis } = config;
 
@@ -73,20 +73,33 @@ interface GetDetailOptions {
     cacheKey?: string;
 }
 
+interface InsertDataOptions {
+    table: string;
+    data: Record<string, any>;
+    attributeColumn?: string;
+    protectedColumns?: string;
+    cacheKeys?: string[];
+}
+
 export const checkColumn = ({
     dbname = database.name,
     table
 }: CheckColumnOptions): Promise<string[]> => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         const query = `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '${dbname}' AND TABLE_NAME = '${table}'`;
 
-        pool.query(query, (err: MysqlError, results: any) => {
+        pool.query(query, (err: QueryError | null, result?: RowDataPacket[] | undefined) => {
+        // pool.query(query, (err: QueryError | null, results?: RowDataPacket[] | OkPacket[] | RowDataPacket[][] | OkPacket[][] | undefined, fields?: FieldPacket[]) => {
             if (err) {
                 console.error(err);
-                return reject(err);
+                return resolve([]);
             }
 
-            const columns = results.map((c: { COLUMN_NAME: string }) => c.COLUMN_NAME);
+            if (!result || _.isEmpty(result)) {
+                return resolve([]);
+            }
+
+            const columns: string[] = result.map((row) => row.COLUMN_NAME);
 
             return resolve(columns);
         });
@@ -95,19 +108,23 @@ export const checkColumn = ({
 
 export const CheckCustomField = ({
     table
-}: CheckCustomFieldOptions): Promise<string[]> => {
+}: CheckCustomFieldOptions): Promise<any[]> => {
     return new Promise((resolve, reject) => {
         const query: string = `SELECT * FROM custom_fields WHERE is_active = 1 AND source_table = '${table}'`;
 
-        pool.query(query, (err: MysqlError, results: any) => {
+        pool.query(query, (err: QueryError | null, result?: RowDataPacket[] | undefined) => {
             if (err) {
                 console.error(err);
-                return reject(err);
+                return resolve([]);
             }
 
-            const columns = results.map((c: { field_key: string; field_type_id: string }) => ({
-                field_key: c.field_key,
-                field_type_id: c.field_type_id,
+            if (!result || _.isEmpty(result)) {
+                return resolve([]);
+            }
+
+            const columns = result.map((row) => ({
+                field_key: row.field_key,
+                field_type_id: row.field_type_id
             }));
 
             return resolve(columns);
@@ -218,15 +235,19 @@ export const countData = ({
             query = queryCount;
         }
 
-        pool.query(query, (err: MysqlError, results: any) => {
+        pool.query(query, (err: QueryError | null, result?: RowDataPacket[] | undefined) => {
             if (err) {
                 console.error(err);
                 return resolve(0);
             }
 
-            const data: number = results[0].count;
+            if (!result || _.isEmpty(result)) {
+                return resolve(0);
+            }
 
-            return resolve(data);
+            const { count } = result[0];
+            
+            return resolve(count || 0);
         });
     });
 };
@@ -275,11 +296,11 @@ export const getAll = ({
         let customFields: string[] = [];
         let customDropdownFields: string[] = [];
 
-        if (attributeColumn) {
+        if (attributeColumn && !_.isEmpty(attributeColumn)) {
             getCustomFields = await CheckCustomField({ table });
-            customFields = _.map(getCustomFields, 'field_key')
-            const getDropdownColumn = _.filter(getCustomFields, { 'field_type_id': 5 })
-            customDropdownFields = _.map(getDropdownColumn, 'field_key')
+            customFields = _.map(getCustomFields, 'field_key');
+            const getDropdownColumn = _.filter(getCustomFields, { 'field_type_id': 5 });
+            customDropdownFields = _.map(getDropdownColumn, 'field_key');
             requestHelper.filterColumn(customAttributes, customFields);
         }
 
@@ -447,7 +468,7 @@ export const getAll = ({
             }
         }
 
-        let total_data: number = await countData({
+        let count: number = await countData({
             table,
             conditions,
             conditionTypes,
@@ -471,19 +492,23 @@ export const getAll = ({
             }
         }
 
-        pool.query(query, (err: MysqlError, results: any) => {
+        pool.query(query, (err: QueryError | null, result?: RowDataPacket[] | undefined) => {
             if (err) {
                 console.error(err);
                 return resolve(resultData);
             }
 
-            resultData.total_data = total_data;
-            resultData.data = results;
+            if (!result || _.isEmpty(result)) {
+                return resolve(resultData);
+            }
+
+            resultData.total_data = count;
+            resultData.data = result;
             resultData.limit = limit;
             resultData.page = page;
 
             if (redis.service === 1) {
-                redisHelper.setDataQuery({ key: `${table}:all`, field: query, value: resultData })
+                redisHelper.setDataQuery({ key: `${table}:all`, field: query, value: resultData });
             }
 
             return resolve(resultData);
@@ -523,14 +548,14 @@ export const getDetail = ({
         let customFields: string[] = [];
         let customDropdownFields: string[] = [];
 
-        if (attributeColumn) {
+        if (attributeColumn && !_.isEmpty(attributeColumn)) {
             if (typeof table === 'string' && !_.isEmpty(table)) {
                 getCustomFields = await CheckCustomField({ table });
             }
 
-            customFields = _.map(getCustomFields, 'field_key')
-            const getDropdownColumn = _.filter(getCustomFields, { 'field_type_id': 5 })
-            customDropdownFields = _.map(getDropdownColumn, 'field_key')
+            customFields = _.map(getCustomFields, 'field_key');
+            const getDropdownColumn = _.filter(getCustomFields, { 'field_type_id': 5 });
+            customDropdownFields = _.map(getDropdownColumn, 'field_key');
             requestHelper.filterColumn(customAttributes, customFields);
         }
 
@@ -650,24 +675,157 @@ export const getDetail = ({
             }
         }
 
-        pool.query(query, (err: MysqlError, results: any) => {
+        
+        pool.query(query, (err: QueryError | null, result?: RowDataPacket[] | undefined) => {
             if (err) {
                 console.error(err);
                 return resolve(resultData);
             }
 
-            if (!_.isEmpty(results)) {
-                resultData.total_data = 1;
-                resultData.data = results[0];
-                resultData.limit = 1;
-                resultData.page = 0;
+            if (!result || _.isEmpty(result)) {
+                return resolve(resultData);
+            }
 
-                if (typeof table === 'string' && !_.isEmpty(table) && redis.service === 1) {
-                    const key: string = cacheKey || table;
-                    const keyId: string = conditions && conditions?.id || '';
-                    redisHelper.setDataQuery({ key: `${key}${keyId}`, field: query, value: resultData });
+            resultData.total_data = 1;
+            resultData.data = result[0];
+            resultData.limit = 1;
+            resultData.page = 0;
+
+            if (typeof table === 'string' && !_.isEmpty(table) && redis.service === 1) {
+                const key: string = cacheKey || table;
+                const keyId: string = conditions && conditions?.id || '';
+                redisHelper.setDataQuery({ key: `${key}${keyId}`, field: query, value: resultData });
+            }
+
+            return resolve(resultData);
+        });
+    });
+};
+
+export const insertData = ({
+    table,
+    data,
+    attributeColumn,
+    protectedColumns,
+    cacheKeys
+}: InsertDataOptions): Promise<Record<string, any>> => {
+    return new Promise(async (resolve) => {
+        let resultData: ResultData = {
+            total_data: 0,
+            data: false
+        };
+    
+        let timeChar: string[] = ['CURRENT_TIMESTAMP()', 'NOW()'];
+        let nullChar: string[] = ['NULL', ''];
+
+        const dataCustom: { [key: string]: any } = { ... data };
+        const columns: string[] = await checkColumn({ table });
+
+        // remove invalid column from data
+        requestHelper.filterColumn(data, columns);
+        // remove invalid data
+        requestHelper.filterData(data);
+
+        let getCustomFields: any[] = [];
+        let customFields: string[] = [];
+        let customDropdownFields: string[] = [];
+
+        let keys: string[] = Object.keys(data);
+
+        // check protected columns on submitted data
+        let forbiddenColumns: string[] = _.intersection(protectedColumns, keys);
+
+        if (!_.isEmpty(forbiddenColumns)) {
+            return resolve(resultData);
+        }
+
+        if (attributeColumn && !_.isEmpty(attributeColumn)) {
+            getCustomFields = await CheckCustomField({ table });
+            customFields = _.map(getCustomFields, 'field_key');
+            const getDropdownColumn = _.filter(getCustomFields, { 'field_type_id': 5 });
+            customDropdownFields = _.map(getDropdownColumn, 'field_key');
+            requestHelper.filterColumn(dataCustom, customFields);
+        }
+
+        let column: string = keys.join(', ');
+
+        let query: string = `INSERT INTO ${table} (${column}) VALUES ?`;
+        // let values: string[] = [];
+        let values: (string | number | null)[][] = [];
+        let dataCustomField: Record<string, any> = {};
+
+        let tempVal = Object.keys(data).map(k => {
+            let dataVal: string | number | null = null;
+
+            if (typeof data[k] !== undefined) {
+                dataVal = data[k];
+
+                if (typeof dataVal === 'string') {
+                    dataVal = dataVal.trim();
+
+                    if (typeof dataVal === 'string' && timeChar.includes(dataVal.toUpperCase())) {
+                        dataVal = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
+                    }
+        
+                    if (typeof dataVal === 'string' && nullChar.includes(dataVal.toUpperCase())) {
+                        dataVal = null;
+                    }
                 }
             }
+
+            return dataVal;
+        });
+
+        Object.keys(dataCustom).forEach((key) => {
+            if (customFields && customFields.includes(key)) {
+                dataCustomField[key] = dataCustom[key];
+
+                if (customDropdownFields && customDropdownFields.includes(key)) {
+                    let dropdownData: string[] = dataCustom[key].split('||');
+                    let dropdownId: string | number = dropdownData[0] || '';
+                    let dropdownValue: string = dropdownData[1] || '';
+
+                    if (_.isNumber(dropdownId) && dropdownId > 0 && _.isEmpty(dropdownValue)) {
+                        dataCustomField[key] = {id: dropdownId, value: dropdownValue}
+                    }
+                }
+            }
+        });
+
+        let jsonDataCustom: string = JSON.stringify(dataCustomField);
+
+        if (!_.isEmpty(dataCustomField)) {
+            tempVal.push(jsonDataCustom);
+        }
+
+        values.push(tempVal);
+
+        pool.query(query, [values], (err: QueryError | null, result: ResultSetHeader): any => {
+            if (err) {
+                console.error(err);
+                return resolve(resultData);
+            }
+
+            if (!result || _.isEmpty(result)) {
+                return resolve(resultData);
+            }
+
+            if (redis.service === 1) {
+                const keyData = `${table}:all`;
+
+                switch (true) {
+                    case (cacheKeys && !_.isEmpty(cacheKeys)):
+                        cacheKeys.push(keyData);
+                        redisHelper.deleteDataQuery({ key: cacheKeys });
+                        break;
+                    default:
+                        redisHelper.deleteDataQuery({ key: [keyData] });
+                        break;
+                }
+            }
+
+            resultData.total_data = result.affectedRows;
+            resultData.data = { id: result.insertId };
 
             return resolve(resultData);
         });

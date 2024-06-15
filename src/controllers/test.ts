@@ -13,7 +13,7 @@ moment.tz.setDefault(timezone);
 export const inbound = async (req: Request, res: Response) => {
     const { query, body } = req;
 
-    let asd = await models.getAll(query);
+    let asd = await models.getAll();
 
     console.log(asd);
 
