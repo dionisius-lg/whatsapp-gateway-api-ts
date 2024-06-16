@@ -14,12 +14,19 @@ export const getAll = async (conditions: Conditions = {}) => {
     // console.log(asd);
     // return asd
 
-    const data = {
-        name: 'Inbound   ',
-        is_active: 1,
-        asd: 1
-    }
+    const data = [
+        {
+            id: 3,
+            name: 'Inbound',
+            is_active: 0
+        },
+        {
+            id: 4,
+            name: 'Outbound',
+            is_active: 0
+        }
+    ]
 
-    let asd = await dbQuery.insertData({ table, data });
+    let asd = await dbQuery.insertDuplicateUpdateData({ table, data });
     return asd;
 }

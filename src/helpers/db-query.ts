@@ -27,60 +27,6 @@ interface CheckColumnOptions {
     table: string;
 }
 
-interface CheckCustomFieldOptions {
-    table: string;
-}
-
-interface CountDataOptions {
-    table: string;
-    conditions?: Record<string, any>;
-    conditionTypes?: ConditionTypes;
-    customConditions?: string[];
-    attributeColumn?: string;
-    customFields?: string[];
-    customDropdownFields?: string[];
-    customAttributes?: Record<string, any>;
-    join?: string[];
-    groupBy?: string[];
-    having?: string[];
-}
-
-interface GetAllOptions {
-    table: string;
-    conditions?: Record<string, any>;
-    conditionTypes?: ConditionTypes;
-    customConditions?: string[];
-    columnSelect?: string[];
-    columnDeselect?: string[];
-    customColumns?: string[];
-    attributeColumn?: string;
-    join?: string[];
-    groupBy?: string[];
-    customOrders?: string[];
-    having?: string[];
-    cacheKey?: string;
-}
-
-interface GetDetailOptions {
-    table: string | boolean;
-    conditions?: Record<string, any>;
-    customConditions?: string[];
-    columnSelect?: string[];
-    columnDeselect?: string[];
-    customColumns?: string[];
-    attributeColumn?: string;
-    join?: string[];
-    cacheKey?: string;
-}
-
-interface InsertDataOptions {
-    table: string;
-    data: Record<string, any>;
-    attributeColumn?: string;
-    protectedColumns?: string;
-    cacheKeys?: string[];
-}
-
 export const checkColumn = ({
     dbname = database.name,
     table
@@ -105,6 +51,10 @@ export const checkColumn = ({
         });
     });
 };
+
+interface CheckCustomFieldOptions {
+    table: string;
+}
 
 export const CheckCustomField = ({
     table
@@ -131,6 +81,20 @@ export const CheckCustomField = ({
         });
     });
 };
+
+interface CountDataOptions {
+    table: string;
+    conditions?: Record<string, any>;
+    conditionTypes?: ConditionTypes;
+    customConditions?: string[];
+    attributeColumn?: string;
+    customFields?: string[];
+    customDropdownFields?: string[];
+    customAttributes?: Record<string, any>;
+    join?: string[];
+    groupBy?: string[];
+    having?: string[];
+}
 
 export const countData = ({
     table,
@@ -251,6 +215,22 @@ export const countData = ({
         });
     });
 };
+
+interface GetAllOptions {
+    table: string;
+    conditions?: Record<string, any>;
+    conditionTypes?: ConditionTypes;
+    customConditions?: string[];
+    columnSelect?: string[];
+    columnDeselect?: string[];
+    customColumns?: string[];
+    attributeColumn?: string;
+    join?: string[];
+    groupBy?: string[];
+    customOrders?: string[];
+    having?: string[];
+    cacheKey?: string;
+}
 
 export const getAll = ({
     table,
@@ -516,6 +496,18 @@ export const getAll = ({
     });
 };
 
+interface GetDetailOptions {
+    table: string | boolean;
+    conditions?: Record<string, any>;
+    customConditions?: string[];
+    columnSelect?: string[];
+    columnDeselect?: string[];
+    customColumns?: string[];
+    attributeColumn?: string;
+    join?: string[];
+    cacheKey?: string;
+}
+
 export const getDetail = ({
     table,
     conditions,
@@ -702,6 +694,14 @@ export const getDetail = ({
     });
 };
 
+interface InsertDataOptions {
+    table: string;
+    data: Record<string, any>;
+    attributeColumn?: string;
+    protectedColumns?: string[];
+    cacheKeys?: string[];
+}
+
 export const insertData = ({
     table,
     data,
@@ -829,5 +829,256 @@ export const insertData = ({
 
             return resolve(resultData);
         });
+    });
+};
+
+interface InsertManyDataOptions {
+    table: string;
+    data: Record<string, any>[];
+    protectedColumns?: string[];
+    cacheKeys?: string[];
+}
+
+export const insertManyData = ({
+    table,
+    data,
+    protectedColumns,
+    cacheKeys
+}: InsertManyDataOptions): Promise<Record<string, any>> => {
+    return new Promise(async (resolve) => {
+        let resultData: ResultData = {
+            total_data: 0,
+            data: false
+        };
+
+        let timeChar: string[] = ['CURRENT_TIMESTAMP()', 'NOW()'];
+        let nullChar: string[] = ['NULL'];
+
+        if (_.isEmpty(data) || data.length === 0) {
+            return resolve(resultData);
+        }
+
+        // get table columns
+        const columns: string[] = await checkColumn({ table });
+        // compare fields from data with columns
+        const diff: string[] = _.difference(Object.keys(data[0]), columns);
+
+        // if there are invalid fields/columns
+        if (!_.isEmpty(diff)) {
+            return resolve(resultData);
+        }
+
+        // remove invalid data
+        requestHelper.filterData(data[0]);
+
+        const keys: string[] = Object.keys(data[0]);
+
+        // if key data empty
+        if (_.isEmpty(keys)) {
+            return resolve(resultData);
+        }
+
+        // check protected columns on submitted data
+        const forbiddenColumns: string[] = _.intersection(protectedColumns, keys);
+
+        if (!_.isEmpty(forbiddenColumns)) {
+            return resolve(resultData);
+        }
+
+        const column: string = keys.join(', ');
+
+        let query: string = `INSERT INTO ${table} (${column}) VALUES ?`;
+        let values: (string | number | null)[][] = [];
+        let tempVal: (string | number | null)[] = [];
+
+        for (let i in data) {
+            // if index and 'data order' on each object not the same
+            if (!_.isEqual(keys, Object.keys(data[i]))) {
+                return resolve(resultData);
+            }
+
+            tempVal = Object.keys(data[i]).map(k => {
+                let dataVal: string | number | null = null;
+
+                if (typeof data[i][k] !== undefined) {
+                    dataVal = data[i][k];
+
+                    if (typeof dataVal === 'string') {
+                        dataVal = dataVal.trim();
+
+                        if (typeof dataVal === 'string' && timeChar.includes(dataVal.toUpperCase())) {
+                            dataVal = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
+                        }
+
+                        if (typeof dataVal === 'string' && nullChar.includes(dataVal.toUpperCase())) {
+                            dataVal = null;
+                        }
+                    }
+                }
+
+                return dataVal;
+            });
+
+            values.push(tempVal);
+        }
+
+        pool.query(query, [values], (err: QueryError | null, result: ResultSetHeader): any => {
+            if (err) {
+                console.error(err);
+                return resolve(resultData);
+            }
+
+            if (!result || _.isEmpty(result)) {
+                return resolve(resultData);
+            }
+
+            if (redis.service === 1) {
+                const keyData = `${table}:all`;
+
+                switch (true) {
+                    case (cacheKeys && !_.isEmpty(cacheKeys)):
+                        cacheKeys.push(keyData);
+                        redisHelper.deleteDataQuery({ key: cacheKeys });
+                        break;
+                    default:
+                        redisHelper.deleteDataQuery({ key: [keyData] });
+                        break;
+                }
+            }
+
+            resultData.total_data = result.affectedRows;
+            resultData.data = data;
+
+            return resolve(resultData);
+        });
+    });
+};
+
+interface InsertDuplicateUpdateDataOptions {
+    table: string;
+    data: Record<string, any>[];
+    protectedColumns?: string[];
+    cacheKeys?: string[];
+}
+
+export const insertDuplicateUpdateData = ({
+    table,
+    data,
+    protectedColumns,
+    cacheKeys
+}: InsertDuplicateUpdateDataOptions): Promise<Record<string, any>> => {
+    return new Promise(async (resolve) => {
+        let resultData: ResultData = {
+            total_data: 0,
+            data: false
+        };
+
+        let timeChar: string[] = ['CURRENT_TIMESTAMP()', 'NOW()'];
+        let nullChar: string[] = ['NULL'];
+
+        if (_.isEmpty(data) || data.length === 0) {
+            return resolve(resultData);
+        }
+
+        // get table columns
+        const columns: string[] = await checkColumn({ table });
+        // compare fields from data with columns
+        const diff: string[] = _.difference(Object.keys(data[0]), columns);
+
+        // if there are invalid fields/columns
+        if (!_.isEmpty(diff)) {
+            return resolve(resultData);
+        }
+
+        // remove invalid data
+        requestHelper.filterData(data[0]);
+
+        const keys: string[] = Object.keys(data[0]);
+
+        // if key data empty
+        if (_.isEmpty(keys)) {
+            return resolve(resultData);
+        }
+
+        // check protected columns on submitted data
+        const forbiddenColumns: string[] = _.intersection(protectedColumns, keys);
+
+        if (!_.isEmpty(forbiddenColumns)) {
+            return resolve(resultData);
+        }
+
+        const column: string = keys.join(', ');
+        let update: string[] = [];
+
+        keys.forEach(v => {
+            update.push(`${v} = VALUES(${v})`);
+        })
+
+        const updateDuplicate: string = update.join(', ');
+
+        let query: string = `INSERT INTO ${table} (${column}) VALUES ? ON DUPLICATE KEY UPDATE ${updateDuplicate}`;
+        let values: (string | number | null)[][] = [];
+        let tempVal: (string | number | null)[] = [];
+
+        for (let i in data) {
+            // if index and 'data order' on each object not the same
+            if (!_.isEqual(keys, Object.keys(data[i]))) {
+                return resolve(resultData);
+            }
+
+            tempVal = Object.keys(data[i]).map(k => {
+                let dataVal: string | number | null = null;
+
+                if (typeof data[i][k] !== undefined) {
+                    dataVal = data[i][k];
+
+                    if (typeof dataVal === 'string') {
+                        dataVal = dataVal.trim();
+
+                        if (typeof dataVal === 'string' && timeChar.includes(dataVal.toUpperCase())) {
+                            dataVal = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
+                        }
+
+                        if (typeof dataVal === 'string' && nullChar.includes(dataVal.toUpperCase())) {
+                            dataVal = null;
+                        }
+                    }
+                }
+
+                return dataVal;
+            });
+
+            values.push(tempVal);
+        }
+
+        pool.query(query, [values], (err: QueryError | null, result: ResultSetHeader): any => {
+            if (err) {
+                console.error(err);
+                return resolve(resultData);
+            }
+
+            if (!result || _.isEmpty(result)) {
+                return resolve(resultData);
+            }
+
+            if (redis.service === 1) {
+                const keyData = `${table}:all`;
+
+                switch (true) {
+                    case (cacheKeys && !_.isEmpty(cacheKeys)):
+                        cacheKeys.push(keyData);
+                        redisHelper.deleteDataQuery({ key: cacheKeys });
+                        break;
+                    default:
+                        redisHelper.deleteDataQuery({ key: [keyData] });
+                        break;
+                }
+            }
+
+            resultData.total_data = result.affectedRows;
+            resultData.data = data;
+
+            return resolve(resultData);
+        })
     });
 };
