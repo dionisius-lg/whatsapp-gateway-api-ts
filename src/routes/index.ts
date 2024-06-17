@@ -40,7 +40,7 @@ router.get('/', (req: Request, res: Response) => {
 router.use(unlessPath([...publicPath], authenticateKey));
 
 readdirSync(__dirname).filter((file: string) => {
-    return file.includes('.') && file !== basename && path.extname(file) === '.ts';
+    return file.includes('.') && file !== basename && ['.js', '.ts'].includes(path.extname(file));
 }).forEach((file: string) => {
     let filename = path.parse(file).name;
     router.use(`/${filename}`, require(`./${filename}`).default);

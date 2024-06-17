@@ -1,4 +1,4 @@
-import express, { Router, Request, Response, NextFunction } from "express";
+import express, { Router, Request, Response, NextFunction, RequestHandler } from "express";
 import moment from "moment-timezone";
 import * as _ from "lodash";
 import * as models from "./../models/test";
@@ -10,10 +10,10 @@ const { timezone } = config;
 
 moment.tz.setDefault(timezone);
 
-export const inbound = async (req: Request, res: Response) => {
+export const inbound: RequestHandler = async (req: Request, res: Response) => {
     const { query, body } = req;
 
-    let asd = await models.getAll();
+    let asd = await models.getAll(query);
 
     console.log(asd);
 
