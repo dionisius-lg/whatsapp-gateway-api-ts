@@ -8,7 +8,7 @@ import { authenticateKey } from "./../middleware/auth";
 
 const router: Router = express.Router();
 const basename: string = path.basename(__filename);
-const publicPath: string[] = ['/webhooks', '/files'];
+const publicPath: string[] = ['/webhooks', '/files', '/directions'];
 const { env } = config;
 
 const matchInArray = (string: string, expression: RegExp[]): boolean => {
