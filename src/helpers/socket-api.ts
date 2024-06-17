@@ -1,7 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse } from "axios";
-import { existsSync, mkdirSync, createWriteStream } from "fs";
-import mime from "mime-types";
-import moment from "moment-timezone";
+import axios, { AxiosInstance } from "axios";
 import * as logger from "./../helpers/logger";
 import config from "./../config";
 
