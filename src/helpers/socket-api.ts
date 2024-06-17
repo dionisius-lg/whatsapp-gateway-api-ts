@@ -24,4 +24,6 @@ const send = async (endpoint: string, body?: any) => {
         });
 };
 
-export default { send };
+const socketApi = { send };
+
+export default socketApi;
