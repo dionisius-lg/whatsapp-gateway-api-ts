@@ -1,7 +1,7 @@
-import { Express, Request } from "express";
+import { Request } from "express";
 import { existsSync, mkdirSync } from "fs";
 import multer from "multer";
-import * as _ from "lodash";
+import { isEmpty } from "./../helpers/value";
 import config from ".";
 
 interface StorageOptions {
@@ -18,7 +18,7 @@ const storage = ({ subpath = null }: StorageOptions) => {
         destination: (req: Request, file: Express.Multer.File, callback: DestinationCallback): void => {
             let path = `${file_dir}/`;
 
-            if (!_.isEmpty(subpath)) {
+            if (!isEmpty(subpath)) {
                 path += `${subpath}/`;
                 path = path.replace(/\/+/g, '/');
 

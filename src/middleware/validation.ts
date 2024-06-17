@@ -1,4 +1,4 @@
-import { Express, Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import { existsSync, unlinkSync } from "fs";
 import * as response from "./../helpers/response";
 

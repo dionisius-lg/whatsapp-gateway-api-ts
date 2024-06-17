@@ -1,7 +1,6 @@
 import axios, { AxiosResponse } from "axios";
-import * as _ from "lodash";
 import * as logger from "./../helpers/logger";
-import { isJson } from "./../helpers/value";
+import { isJson, isEmpty } from "./../helpers/value";
 
 interface Client {
     url: string;
@@ -28,7 +27,7 @@ const send = async ({ clients = [], body = {} }: SendOptions): Promise<SendResul
         for (let client of clients) {
             let headers: Record<string, string> = { 'Content-Type': 'application/json' };
 
-            if (client.auth_key && !_.isEmpty(client.auth_key) && client.auth_value && !_.isEmpty(client.auth_value)) {
+            if (client.auth_key && !isEmpty(client.auth_key) && client.auth_value && !isEmpty(client.auth_value)) {
                 headers[client.auth_key] = client.auth_value;
             }
 

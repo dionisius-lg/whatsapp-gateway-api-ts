@@ -1,5 +1,4 @@
 import express, { Router, Request, Response, NextFunction } from "express";
-import * as _ from "lodash";
 import { readdirSync } from "fs";
 import path from "path";
 import config from "./../config";
