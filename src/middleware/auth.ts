@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { readContent } from "./../helpers/file";
 import * as response from "./../helpers/response";
 
 /**
@@ -12,8 +13,7 @@ export const authenticateKey = (req: Request, res: Response, next: NextFunction)
     const authKey = headers?.['x-api-key'] || false;
 
     if (authKey) {
-        const key = '123'
-        // const key = readContent({ filename: 'key.txt' });
+        const key = readContent('key.txt');
 
         if (key !== authKey) {
             return response.sendUnauthorized(res, 'API key not valid');
