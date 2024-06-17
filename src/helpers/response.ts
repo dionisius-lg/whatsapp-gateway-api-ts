@@ -7,39 +7,56 @@ const { timezone } = config;
 
 moment.tz.setDefault(timezone);
 
+interface Result {
+    [key: string]: any;
+}
+
 /**
  * Success 200 OK
- * @param {Object} res
- * @param {Object} data
+ * @param {Response} res
+ * @param {Result} result
  * @returns {Object} JSON object
  */
-export const sendSuccess = (res: Response, data: {} | string[]): object => {
-    return res.status(200).send(data);
+export const sendSuccess = (res: Response, result: Result | Result[]): object => {
+    if (_.isPlainObject(result)) {
+        if ('total_data' in result && 'data' in result && 'limit' in result && 'page' in result) {
+            if (_.isArray(result['data']) && _.toNumber(result['total_data']) > 0 && _.toNumber(result['limit']) > 0) {
+                const currentPage = _.toNumber(result['page']) || 1;
+                const previousPage = currentPage - 1;
+                const nextPage = currentPage + 1;
+                const firstPage = 1;
+                const lastPage = _.ceil(_.toNumber(result['total_data'] || 1) / _.toNumber(result['limit'] || 1));
+
+                result.paging = {
+                    current: currentPage,
+                    previous: previousPage > 0 ? previousPage : 1,
+                    next: nextPage <= lastPage ? nextPage : lastPage,
+                    first: firstPage,
+                    last: lastPage > 0 ? lastPage : 1
+                }
+            }
+
+            delete result['limit'];
+            delete result['page'];
+        }
+    }
+
+    return res.status(200).send(result);
 };
 
 /**
- * Success 201 OK
- * @param {Object} res
- * @param {Object} data
+ * Success 201 Created
+ * @param {Response} res
+ * @param {Result} result
  * @returns {Object} JSON object
  */
-export const sendSuccessCreated = (res: Response, data: {}): object => {
-    return res.status(201).send(data);
-};
-
-/**
- * Success 204 OK
- * @param {Object} res
- * @param {Object} data
- * @returns {Object} JSON object
- */
-export const sendSuccessDeleted = (res: Response, data: {}): object => {
-    return res.status(204).send(data);
+export const sendSuccessCreated = (res: Response, result: {}): object => {
+    return res.status(201).send(result);
 };
 
 /**
  * Error 400 Bad Request
- * @param {Object} res
+ * @param {Response} res
  * @param {string} message
  * @returns {Object} JSON object
  */
@@ -50,7 +67,7 @@ export const sendBadRequest = (res: Response, message?: string): object => {
 
 /**
  * Error 401 Unauthorized
- * @param {Object} res
+ * @param {Response} res
  * @param {string} message
  * @returns {Object} JSON object
  */
@@ -61,7 +78,7 @@ export const sendUnauthorized = (res: Response, message?: string): object => {
 
 /**
  * Error 403 Forbidden
- * @param {Object} res
+ * @param {Response} res
  * @returns {Object} JSON object
  */
 export const sendForbidden = (res: Response): object => {
@@ -71,7 +88,7 @@ export const sendForbidden = (res: Response): object => {
 
 /**
  * Error 404 Resource Not Found
- * @param {Object} res
+ * @param {Response} res
  * @returns {Object} JSON object
  */
 export const sendNotFound = (res: Response): object => {
@@ -81,7 +98,7 @@ export const sendNotFound = (res: Response): object => {
 
 /**
  * Error 404 Data Not Found
- * @param {Object} res
+ * @param {Response} res
  * @param {Object} data
  * @returns {Object} JSON object
  */
@@ -92,7 +109,7 @@ export const sendNotFoundData = (res: Response, message?: string): object => {
 
 /**
  * Error 405 Method not allowed
- * @param {Object} res
+ * @param {Response} res
  * @param {string} message
  * @returns {Object} JSON object
  */
@@ -103,7 +120,7 @@ export const sendMethodNotAllowed = (res: Response): object => {
 
 /**
  * Error 429 Too Many Request
- * @param {Object} res
+ * @param {Response} res
  * @param {string} message
  * @returns {Object} JSON object
  */
@@ -114,7 +131,7 @@ export const sendTooManyRequests = (res: Response, message?: string): object => 
 
 /**
  * Error 500 Internal Server Error
- * @param {Object} res
+ * @param {Response} res
  * @returns {Object} JSON object
  */
 export const sendInternalServerError = (res: Response): object => {

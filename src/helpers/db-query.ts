@@ -11,8 +11,8 @@ const { timezone, database, redis } = config;
 moment.tz.setDefault(timezone);
 
 interface ConditionTypes {
-    like: string[];
-    date: string[];
+    like?: string[];
+    date?: string[];
 }
 
 interface ResultData {
@@ -124,12 +124,13 @@ export const countData = ({
             Object.keys(conditions).forEach((k) => {
                 if (conditionTypes && !_.isEmpty(conditionTypes)) {
                     switch (true) {
-                        case ((conditionTypes?.date).includes(k)):
+                        case (conditionTypes.date && (conditionTypes.date).includes(k)):
                             let dateVal: Moment = _.toNumber(conditions[k]) > 0 ? moment(_.toNumber(conditions[k]) * 1000) : moment(new Date());
                             setCond.push(`DATE(${table}.${k}) = ${escape(dateVal.format('YYYY-MM-DD'))}`);
                             break;
-                        case ((conditionTypes?.like).includes(k)):
-                            setCond.push(`${table}.${k} LIke %${escape(conditions[k])}%`);
+                        case (conditionTypes.like && (conditionTypes.like).includes(k)):
+                            let likeVal = `%${conditions[k]}%`;
+                            setCond.push(`${table}.${k} LIKE ${escape(likeVal)}`);
                             break;
                         default:
                             if (conditions[k].constructor === Array) {
@@ -266,7 +267,12 @@ export const getAll = ({
             order = false;
         }
 
-        const sort: string = conditions && sortData.includes((conditions?.sort).toUpperCase()) ? (conditions.sort).toUpperCase() : 'ASC';
+        let sort: string = sortData[0];
+
+        if (conditions && typeof conditions?.sort === 'string' && sortData.includes((conditions?.sort).toUpperCase())) {
+            sort = (conditions.sort).toUpperCase();
+        }
+
         let limit: number = conditions && _.toNumber(conditions?.limit) > 0 ? _.toNumber(conditions.limit) : 20;
 
         let page: number = conditions && _.toNumber(conditions?.page) || 1;
@@ -353,12 +359,13 @@ export const getAll = ({
             Object.keys(conditions).forEach((k) => {
                 if (conditionTypes && !_.isEmpty(conditionTypes)) {
                     switch (true) {
-                        case ((conditionTypes?.date).includes(k)):
+                        case (conditionTypes.date && (conditionTypes.date).includes(k)):
                             let dateVal: Moment = _.toNumber(conditions[k]) > 0 ? moment(_.toNumber(conditions[k]) * 1000) : moment(new Date());
                             setCond.push(`DATE(${table}.${k}) = ${escape(dateVal.format('YYYY-MM-DD'))}`);
                             break;
-                        case ((conditionTypes?.like).includes(k)):
-                            setCond.push(`${table}.${k} LIke %${escape(conditions[k])}%`);
+                        case (conditionTypes.like && (conditionTypes.like).includes(k)):
+                            let likeVal = `%${conditions[k]}%`;
+                            setCond.push(`${table}.${k} LIKE ${escape(likeVal)}`);
                             break;
                         default:
                             if (conditions[k].constructor === Array) {
@@ -402,7 +409,7 @@ export const getAll = ({
         }
 
         queryCond = setCond.join(' AND ');
-        query += !_.isEmpty(queryCond) ? ` WHERE ${queryCond}` : '';
+        query += _.isEmpty(queryCond) ? ` WHERE ${queryCond}` : '';
 
         if (customConditions && !_.isEmpty(customConditions) && _.isArrayLikeObject(customConditions)) {
             queryCond = ' WHERE ' + customConditions.join(' AND ');
