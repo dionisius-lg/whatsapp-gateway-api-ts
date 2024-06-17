@@ -39,7 +39,7 @@ export const insertData = async (data: Data) => {
 
 export const updateData = async (data: Data, conditions: Conditions) => {
     const protectedColumns = ['id'];
-    return await dbQuery.updateData({ table, data, conditions });
+    return await dbQuery.updateData({ table, data, conditions, protectedColumns});
 };
 
 export const deleteData = async (conditions: Conditions) => {
