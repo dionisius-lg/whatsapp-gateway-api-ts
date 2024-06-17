@@ -21,7 +21,12 @@ interface RequestApiOptions {
     body?: any;
 }
 
-const requestApi = async ({ method, endpoint, body }: RequestApiOptions) => {
+interface RequestApiResult {
+    status: number;
+    data: any;
+}
+
+const requestApi = async ({ method, endpoint, body }: RequestApiOptions): Promise<RequestApiResult> => {
     instance.defaults.headers['Content-Type'] = 'application/json';
     let result: any = {};
 

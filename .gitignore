@@ -12,3 +12,4 @@
 # misc
 /package-lock.json
 /key.txt
+/src/helpers/whatsapp-api-jsm.ts

@@ -17,8 +17,8 @@ interface Result {
  * @param {Result} result
  * @returns {Object} JSON object
  */
-export const sendSuccess = (res: Response, result: Result | Result[]): object => {
-    if (_.isPlainObject(result)) {
+export const sendSuccess = (res: Response, result: Result | Result[] | null): object => {
+    if (result && _.isPlainObject(result)) {
         if ('total_data' in result && 'data' in result && 'limit' in result && 'page' in result) {
             if (_.isArray(result['data']) && _.toNumber(result['total_data']) > 0 && _.toNumber(result['limit']) > 0) {
                 const currentPage = _.toNumber(result['page']) || 1;
@@ -50,7 +50,7 @@ export const sendSuccess = (res: Response, result: Result | Result[]): object =>
  * @param {Result} result
  * @returns {Object} JSON object
  */
-export const sendSuccessCreated = (res: Response, result: {}): object => {
+export const sendSuccessCreated = (res: Response, result: Result | Result[] | null): object => {
     return res.status(201).send(result);
 };
 
