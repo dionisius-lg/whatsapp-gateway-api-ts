@@ -56,7 +56,7 @@ interface CheckCustomFieldOptions {
     table: string;
 }
 
-export const CheckCustomField = ({
+export const checkCustomField = ({
     table
 }: CheckCustomFieldOptions): Promise<any[]> => {
     return new Promise((resolve, reject) => {
@@ -277,7 +277,7 @@ export const getAll = ({
         let customDropdownFields: string[] = [];
 
         if (attributeColumn && !_.isEmpty(attributeColumn)) {
-            getCustomFields = await CheckCustomField({ table });
+            getCustomFields = await checkCustomField({ table });
             customFields = _.map(getCustomFields, 'field_key');
             const getDropdownColumn = _.filter(getCustomFields, { 'field_type_id': 5 });
             customDropdownFields = _.map(getDropdownColumn, 'field_key');
@@ -542,7 +542,7 @@ export const getDetail = ({
 
         if (attributeColumn && !_.isEmpty(attributeColumn)) {
             if (typeof table === 'string' && !_.isEmpty(table)) {
-                getCustomFields = await CheckCustomField({ table });
+                getCustomFields = await checkCustomField({ table });
             }
 
             customFields = _.map(getCustomFields, 'field_key');
@@ -740,7 +740,7 @@ export const insertData = ({
         }
 
         if (attributeColumn && !_.isEmpty(attributeColumn)) {
-            getCustomFields = await CheckCustomField({ table });
+            getCustomFields = await checkCustomField({ table });
             customFields = _.map(getCustomFields, 'field_key');
             const getDropdownColumn = _.filter(getCustomFields, { 'field_type_id': 5 });
             customDropdownFields = _.map(getDropdownColumn, 'field_key');
@@ -776,17 +776,17 @@ export const insertData = ({
             return dataVal;
         });
 
-        Object.keys(dataCustom).forEach((key) => {
-            if (customFields && customFields.includes(key)) {
-                dataCustomField[key] = dataCustom[key];
+        Object.keys(dataCustom).forEach((k) => {
+            if (customFields && customFields.includes(k)) {
+                dataCustomField[k] = dataCustom[k];
 
-                if (customDropdownFields && customDropdownFields.includes(key)) {
-                    let dropdownData: string[] = dataCustom[key].split('||');
+                if (customDropdownFields && customDropdownFields.includes(k)) {
+                    let dropdownData: string[] = dataCustom[k].split('||');
                     let dropdownId: string | number = dropdownData[0] || '';
                     let dropdownValue: string = dropdownData[1] || '';
 
-                    if (_.isNumber(dropdownId) && dropdownId > 0 && _.isEmpty(dropdownValue)) {
-                        dataCustomField[key] = {id: dropdownId, value: dropdownValue}
+                    if (_.isNumber(dropdownId) && parseInt(dropdownId) > 0 && !_.isEmpty(dropdownValue)) {
+                        dataCustomField[k] = {id: dropdownId, value: dropdownValue}
                     }
                 }
             }
@@ -1079,6 +1079,291 @@ export const insertDuplicateUpdateData = ({
             resultData.data = data;
 
             return resolve(resultData);
-        })
+        });
     });
+};
+
+interface UpdateDataOptions {
+    table: string;
+    data: Record<string, any>;
+    conditions: Record<string, any>;
+    attributeColumn?: string;
+    protectedColumns?: string[];
+    cacheKeys?: string[];
+}
+
+export const updateData = ({
+    table,
+    data,
+    conditions,
+    attributeColumn,
+    protectedColumns,
+    cacheKeys
+}: UpdateDataOptions): Promise<Record<string, any>> => {
+    return new Promise(async (resolve) => {
+        let resultData: ResultData = {
+            total_data: 0,
+            data: false
+        };
+
+        let timeChar: string[] = ['CURRENT_TIMESTAMP()', 'NOW()'];
+        let nullChar: string[] = ['NULL'];
+        let setData: string[] = [];
+        let queryData: string = '';
+        let setCond: string[] = [];
+        let queryCond: string = '';
+        let query: string = `UPDATE ${table}`;
+
+        const dataCustom: { [key: string]: any } = { ... data };
+        const customAttributes: { [key: string]: any } = { ... conditions };
+        const columns: string[] = await checkColumn({ table });
+
+        // remove invalid column from data
+        requestHelper.filterColumn(data, columns);
+        // remove invalid data
+        requestHelper.filterData(data);
+
+        let customFields: string[] = [];
+        let getCustomFields: any[] = [];
+        let customDropdownFields: string[] = [];
+
+        if (attributeColumn && !_.isEmpty(attributeColumn)) {
+            getCustomFields = await checkCustomField({ table });
+            customFields = _.map(getCustomFields, 'field_key');
+            const getDropdownColumn = _.filter(getCustomFields, { 'field_type_id': 5 });
+            customDropdownFields = _.map(getDropdownColumn, 'field_key');
+            requestHelper.filterColumn(dataCustom, customFields);
+            requestHelper.filterColumn(customAttributes, customFields);
+        }
+
+        // reject('Update query is unsafe without data and condition')
+        if (_.isEmpty(data) || _.isEmpty(dataCustom) || _.isEmpty(conditions)) {
+            return resolve(resultData);
+        }
+
+        const keys: string[] = Object.keys(data);
+        // check protected columns on submitted data
+        const forbiddenColumns = _.intersection(protectedColumns, keys);
+
+        if (!_.isEmpty(forbiddenColumns)) {
+            return resolve(resultData);
+        }
+
+        if (attributeColumn && data.hasOwnProperty(attributeColumn)) {
+            delete data[attributeColumn];
+        }
+
+        keys.forEach(k => {
+            let dataVal: string | number | null = null;
+
+            if (typeof data[k] !== undefined) {
+                dataVal = data[k];
+
+                if (typeof dataVal === 'string') {
+                    dataVal = dataVal.trim();
+
+                    if (typeof dataVal === 'string' && timeChar.includes(dataVal.toUpperCase())) {
+                        dataVal = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
+                    }
+        
+                    if (typeof dataVal === 'string' && nullChar.includes(dataVal.toUpperCase())) {
+                        dataVal = null;
+                    }
+                }
+            }
+
+            if (_.isEmpty(dataVal) && dataVal !== 0) {
+                setData.push(`${k} = NULL`);
+            } else {
+                setData.push(`${k} = ${escape(dataVal)}`);
+            }
+        });
+
+        if (attributeColumn && !_.isEmpty(attributeColumn)) {
+            let setJsonData: string[] = [];
+
+            Object.keys(dataCustom).forEach(k => {
+                if (customFields.includes(k)) {
+                    switch (true) {
+                        case (customDropdownFields.includes(k)):
+                            let dropdownData: string[] = dataCustom[k].split('||');
+                            let dropdownId: string | number = dropdownData[0] || '';
+                            let dropdownValue: string = dropdownData[1] || '';
+
+                            if (_.isNumber(dropdownId) && parseInt(dropdownId) > 0 && !_.isEmpty(dropdownValue)) {
+                                setJsonData.push(`'$.${k}', JSON_OBJECT('id', ${escape(parseInt(dropdownId))}, 'value', ${escape(dropdownValue)})`);
+                            }
+                            break;
+                        default:
+                            setJsonData.push(`'$.${k}', ${escape(dataCustom[k])}`);
+                            break;
+                    }
+                }
+            });
+
+            let joinData: string = setJsonData.join(', ');
+
+            if (!_.isEmpty(joinData)) {
+                setData.push(`${attributeColumn} = JSON_SET(COALESCE(${attributeColumn}, '{}'), ${joinData})`);
+            }
+        }
+
+        queryData = setData.join(', ');
+        query += ` SET ${queryData}`;
+
+        Object.keys(conditions).forEach(k => {
+            switch (true) {
+                case (_.isArray(conditions[k])):
+                    setCond.push(`${k} IN (${(conditions[k].join(',')).trim()})`);
+                    break;
+                default:
+                    setCond.push(`${k} = ${escape(typeof conditions[k] === 'string' && conditions[k].trim() || conditions[k])}`);
+                    break;
+            }
+        });
+
+        if (attributeColumn && !_.isEmpty(attributeColumn)) {
+            for (let k in customAttributes) {
+                if (customFields.includes(k)) {
+                    setCond.push(`JSON_EXTRACT(LOWER(${attributeColumn}), '$.${k}') = LOWER(${escape(customAttributes[k])})`);
+                }
+            }
+        }
+
+        queryCond = setCond.join(' AND ');
+        query += ` WHERE ${queryCond}`;
+
+        pool.query(query, (err: QueryError | null, result: ResultSetHeader): any => {
+            if (err) {
+                console.error(err);
+                return resolve(resultData);
+            }
+
+            if (!result || _.isEmpty(result)) {
+                return resolve(resultData);
+            }
+
+            if (redis.service === 1) {
+                const keyData = `${table}:all`;
+                const keyId = conditions['id'] || '';
+
+                switch (true) {
+                    case (cacheKeys && !_.isEmpty(cacheKeys)):
+                        cacheKeys.push(keyData);
+
+                        if (keyId) {
+                            cacheKeys.push(`${table}:${keyId}`)
+                        }
+
+                        redisHelper.deleteDataQuery({ key: cacheKeys });
+                        break;
+                    default:
+                        let keyToDelete = [keyData];
+
+                        if (keyId) {
+                            keyToDelete.push(`${table}:${keyId}`)
+                        }
+
+                        redisHelper.deleteDataQuery({ key: keyToDelete });
+                        break;
+                }
+            }
+
+            resultData.total_data = result.affectedRows;
+            resultData.data = conditions;
+
+            if (resultData.total_data < 1 || result.warningStatus) {
+                resultData.data = false;
+            }
+
+            return resolve(resultData);
+        });
+    });
+};
+
+interface DeleteDataOptions {
+    table: string;
+    conditions: Record<string, any>;
+    cacheKeys?: string[];
+}
+
+export const deleteData = ({
+    table,
+    conditions,
+    cacheKeys
+}: DeleteDataOptions): Promise<Record<string, any>> => {
+    return new Promise(async (resolve) => {
+        let resultData: ResultData = {
+            total_data: 0,
+            data: false
+        };
+
+        let setCond: string[] = [];
+        let queryCond: string = '';
+        let query: string = `DELETE FROM ${table}`;
+
+        // reject('Delete query is unsafe without condition')
+        if (_.isEmpty(conditions)) {
+            return resolve(resultData);
+        }
+
+        Object.keys(conditions).forEach(k => {
+            switch (true) {
+                case (_.isArray(conditions[k])):
+                    setCond.push(`${k} IN (${(conditions[k].join(',')).trim()})`);
+                    break;
+                default:
+                    setCond.push(`${k} = ${escape(typeof conditions[k] === 'string' && conditions[k].trim() || conditions[k])}`);
+                    break;
+            }
+        });
+
+        queryCond = setCond.join(' AND ');
+        query += ` WHERE ${queryCond}`;
+
+        pool.query(query, (err: QueryError | null, result: ResultSetHeader): any => {
+            if (err) {
+                console.error(err);
+                return resolve(resultData);
+            }
+
+            if (!result || _.isEmpty(result)) {
+                return resolve(resultData);
+            }
+
+            if (redis.service === 1) {
+                const keyData = `${table}:all`;
+                const keyId = conditions['id'] || '';
+
+                switch (true) {
+                    case (cacheKeys && !_.isEmpty(cacheKeys)):
+                        cacheKeys.push(keyData);
+
+                        if (keyId) {
+                            cacheKeys.push(`${table}:${keyId}`)
+                        }
+
+                        redisHelper.deleteDataQuery({ key: cacheKeys });
+                        break;
+                    default:
+                        let keyToDelete = [keyData];
+
+                        if (keyId) {
+                            keyToDelete.push(`${table}:${keyId}`)
+                        }
+
+                        redisHelper.deleteDataQuery({ key: keyToDelete });
+                        break;
+                }
+            }
+
+            resultData.total_data = result.affectedRows;
+
+            if (result.affectedRows > 0) {
+                resultData.data = conditions;
+            }
+
+            return resolve(resultData);
+        });
+    })
 };

@@ -5,8 +5,12 @@ import * as dbQuery from "./../helpers/db-query";
 
 const table: string = 'directions';
 
+interface ParsedQs {
+    [key: string]: string | string[] | ParsedQs | ParsedQs[] | undefined;
+}
+
 interface Conditions {
-    [key: string]: string | number | string[];
+    [key: string]: string | string[] | ParsedQs | ParsedQs[] | undefined;
 }
 
 export const getAll = async (conditions: Conditions = {}) => {
@@ -14,19 +18,11 @@ export const getAll = async (conditions: Conditions = {}) => {
     // console.log(asd);
     // return asd
 
-    const data = [
-        {
-            id: 3,
-            name: 'Inbound',
-            is_active: 0
-        },
-        {
-            id: 4,
-            name: 'Outbound',
-            is_active: 0
-        }
-    ]
+    const data = {
+        name: 'Inbound',
+        is_active: 0
+    }
 
-    let asd = await dbQuery.insertDuplicateUpdateData({ table, data });
+    let asd = await dbQuery.deleteData({ table, conditions });
     return asd;
 }
