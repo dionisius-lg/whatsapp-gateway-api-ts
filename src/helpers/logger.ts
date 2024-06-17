@@ -1,4 +1,3 @@
-import * as _ from "lodash";
 import moment from "moment-timezone";
 import morgan from "morgan";
 import winston from "winston";
@@ -6,6 +5,7 @@ import "winston-daily-rotate-file";
 import { createStream } from "rotating-file-stream";
 import { dirname, resolve } from "path";
 import config from "./../config";
+import { isEmpty } from "./value";
 
 const { timezone } = config;
 
@@ -64,7 +64,7 @@ export const success = ({ from = 'server', message = '', result = null }: LogOpt
 
     let log: LogOptions = { status: 'success', from, message };
 
-    if (!_.isEmpty(result)) {
+    if (!isEmpty(result)) {
         log.result = result;
     }
 
@@ -87,7 +87,7 @@ export const error = ({ from = 'server', message = '', result = null }: LogOptio
 
     let log: LogOptions = { status: 'error', from, message };
 
-    if (!_.isEmpty(result)) {
+    if (!isEmpty(result)) {
         log.result = result;
     }
 

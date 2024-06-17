@@ -4,7 +4,8 @@ import config from "./../config";
 import pool, { escape } from "./../config/pool";
 import * as redisHelper from "./../helpers/redis";
 import * as requestHelper from "./../helpers/request";
-import { QueryError, QueryResult, RowDataPacket, ResultSetHeader, FieldPacket } from "mysql2";
+import { isEmpty } from "./../helpers/value";
+import { QueryError, RowDataPacket, ResultSetHeader } from "mysql2";
 
 const { timezone, database, redis } = config;
 
@@ -41,7 +42,7 @@ export const checkColumn = ({
                 return resolve([]);
             }
 
-            if (!result || _.isEmpty(result)) {
+            if (!result || isEmpty(result)) {
                 return resolve([]);
             }
 
@@ -68,7 +69,7 @@ export const checkCustomField = ({
                 return resolve([]);
             }
 
-            if (!result || _.isEmpty(result)) {
+            if (!result || isEmpty(result)) {
                 return resolve([]);
             }
 
@@ -116,13 +117,13 @@ export const countData = ({
         let query: string = `SELECT COUNT(*) AS count FROM ${table}`;
         let queryCount: string = '';
 
-        if (join && !_.isEmpty(join) && _.isArrayLikeObject(join)) {
+        if (join && !isEmpty(join) && _.isArrayLikeObject(join)) {
             query += join.join(' ');
         }
 
-        if (conditions && !_.isEmpty(conditions)) {
+        if (conditions && !isEmpty(conditions)) {
             Object.keys(conditions).forEach((k) => {
-                if (conditionTypes && !_.isEmpty(conditionTypes)) {
+                if (conditionTypes && !isEmpty(conditionTypes)) {
                     switch (true) {
                         case (conditionTypes.date && (conditionTypes.date).includes(k)):
                             let dateVal: Moment = _.toNumber(conditions[k]) > 0 ? moment(_.toNumber(conditions[k]) * 1000) : moment(new Date());
@@ -154,11 +155,11 @@ export const countData = ({
             query += ` WHERE ${queryCond}`;
         }
 
-        if (attributeColumn && !_.isEmpty(attributeColumn)) {
+        if (attributeColumn && !isEmpty(attributeColumn)) {
             // for custom attributes
             let queryLine: string;
 
-            if (customAttributes && !_.isEmpty(customAttributes)) {
+            if (customAttributes && !isEmpty(customAttributes)) {
                 for (let k in customAttributes) {
                     switch (true) {
                         case (customDropdownFields && customDropdownFields.includes(k)):
@@ -173,25 +174,25 @@ export const countData = ({
                 }
 
                 queryCond = setCustomCond.join((' AND '));
-                query += (conditions && !_.isEmpty(conditions)) ? ` AND ${queryCond}` : ` WHERE ${queryCond}`;
+                query += (conditions && !isEmpty(conditions)) ? ` AND ${queryCond}` : ` WHERE ${queryCond}`;
             }
         }
 
-        if (customConditions && !_.isEmpty(customConditions) && _.isArrayLikeObject(customConditions)) {
+        if (customConditions && !isEmpty(customConditions) && _.isArrayLikeObject(customConditions)) {
             queryCond = ` WHERE ` + customConditions.join(' AND ');
 
-            if ((conditions && !_.isEmpty(conditions)) || (setCustomCond && !_.isEmpty(setCustomCond))) {
+            if ((conditions && !isEmpty(conditions)) || (setCustomCond && !isEmpty(setCustomCond))) {
                 queryCond = ` AND ` + customConditions.join(' AND ');
             }
 
             query += `${queryCond}`;
         }
 
-        if (groupBy && !_.isEmpty(groupBy) && _.isArrayLikeObject(groupBy)) {
+        if (groupBy && !isEmpty(groupBy) && _.isArrayLikeObject(groupBy)) {
             let columnGroup = groupBy.join(', ');
             query += ` GROUP BY ${columnGroup}`;
 
-            if (having && !_.isEmpty(having) && _.isArrayLikeObject(having)) {
+            if (having && !isEmpty(having) && _.isArrayLikeObject(having)) {
                 let havingClause = having.join(' AND ');
                 query += ` HAVING ${havingClause}`;
             }
@@ -206,7 +207,7 @@ export const countData = ({
                 return resolve(0);
             }
 
-            if (!result || _.isEmpty(result)) {
+            if (!result || isEmpty(result)) {
                 return resolve(0);
             }
 
@@ -282,7 +283,7 @@ export const getAll = ({
         let customFields: string[] = [];
         let customDropdownFields: string[] = [];
 
-        if (attributeColumn && !_.isEmpty(attributeColumn)) {
+        if (attributeColumn && !isEmpty(attributeColumn)) {
             getCustomFields = await checkCustomField({ table });
             customFields = _.map(getCustomFields, 'field_key');
             const getDropdownColumn = _.filter(getCustomFields, { 'field_type_id': 5 });
@@ -290,13 +291,13 @@ export const getAll = ({
             requestHelper.filterColumn(customAttributes, customFields);
         }
 
-        if (columnSelect && !_.isEmpty(columnSelect) && _.isArrayLikeObject(columnSelect)) {
+        if (columnSelect && !isEmpty(columnSelect) && _.isArrayLikeObject(columnSelect)) {
             // filter data from all table columns, only keep selected columns
             let validColumn = _.intersection(columnSelect, columns);
             columns = validColumn;
         }
 
-        if (columnDeselect && !_.isEmpty(columnDeselect) && _.isArrayLikeObject(columnDeselect)) {
+        if (columnDeselect && !isEmpty(columnDeselect) && _.isArrayLikeObject(columnDeselect)) {
             if (columnDeselect.includes('*')) {
                 // filter data, exclude all columns
                 // let selectedColumn = _.difference(columns, deselectedColumn)
@@ -310,7 +311,7 @@ export const getAll = ({
             }
         }
 
-        if (join && !_.isEmpty(join) && _.isArrayLikeObject(join)) {
+        if (join && !isEmpty(join) && _.isArrayLikeObject(join)) {
             // give prefix table to table columns
             let prefixColumn = columns.map((col: string) => {
                 return `${table}.${col}`;
@@ -321,7 +322,7 @@ export const getAll = ({
 
         column = columns.join(', ');
 
-        if (attributeColumn && customFields && !_.isEmpty(customFields)) {
+        if (attributeColumn && customFields && !isEmpty(customFields)) {
             let customField: string = '';
             let setCustomField: string[] = [];
 
@@ -334,11 +335,11 @@ export const getAll = ({
             }
 
             customField = setCustomField.join(', ');
-            column += (!_.isEmpty(column)) ? `, ${customField}` : `${customField}`;
+            column += (!isEmpty(column)) ? `, ${customField}` : `${customField}`;
         }
 
-        if (customColumns && !_.isEmpty(customColumns) && _.isArrayLikeObject(customColumns)) {
-            if (_.isEmpty(columns)) {
+        if (customColumns && !isEmpty(customColumns) && _.isArrayLikeObject(customColumns)) {
+            if (isEmpty(columns)) {
                 column += customColumns.join(', ');
             } else {
                 column += ', ' + customColumns.join(', ');
@@ -347,7 +348,7 @@ export const getAll = ({
 
         let query: string = `SELECT ${column} FROM ${table}`;
 
-        if (join && !_.isEmpty(join) && _.isArrayLikeObject(join)) {
+        if (join && !isEmpty(join) && _.isArrayLikeObject(join)) {
             let joinQuery: string = join.join(' ');
             query += ` ${joinQuery}`;
         }
@@ -355,9 +356,9 @@ export const getAll = ({
         // remove invalid column from conditions
         requestHelper.filterColumn(conditions, masterColumns);
 
-        if (conditions && !_.isEmpty(conditions)) {
+        if (conditions && !isEmpty(conditions)) {
             Object.keys(conditions).forEach((k) => {
-                if (conditionTypes && !_.isEmpty(conditionTypes)) {
+                if (conditionTypes && !isEmpty(conditionTypes)) {
                     switch (true) {
                         case (conditionTypes.date && (conditionTypes.date).includes(k)):
                             let dateVal: Moment = _.toNumber(conditions[k]) > 0 ? moment(_.toNumber(conditions[k]) * 1000) : moment(new Date());
@@ -388,11 +389,11 @@ export const getAll = ({
             query += ` WHERE ${queryCond}`;
         }
 
-        if (attributeColumn && !_.isEmpty(attributeColumn)) {
+        if (attributeColumn && !isEmpty(attributeColumn)) {
             // for custom attributes
             let queryLine: string;
 
-            if (customAttributes && !_.isEmpty(customAttributes)) {
+            if (customAttributes && !isEmpty(customAttributes)) {
                 for (let k in customAttributes) {
                     switch (true) {
                         case (customDropdownFields && customDropdownFields.includes(k)):
@@ -409,35 +410,35 @@ export const getAll = ({
         }
 
         queryCond = setCond.join(' AND ');
-        query += _.isEmpty(queryCond) ? ` WHERE ${queryCond}` : '';
+        query += isEmpty(queryCond) ? ` WHERE ${queryCond}` : '';
 
-        if (customConditions && !_.isEmpty(customConditions) && _.isArrayLikeObject(customConditions)) {
+        if (customConditions && !isEmpty(customConditions) && _.isArrayLikeObject(customConditions)) {
             queryCond = ' WHERE ' + customConditions.join(' AND ');
 
-            if ((conditions && !_.isEmpty(conditions)) || (setCond && !_.isEmpty(setCond))) {
+            if ((conditions && !isEmpty(conditions)) || (setCond && !isEmpty(setCond))) {
                 queryCond = ' AND ' + customConditions.join(' AND ');
             }
 
             query += `${queryCond}`;
         }
 
-        if (groupBy && !_.isEmpty(groupBy) && _.isArrayLikeObject(groupBy)) {
+        if (groupBy && !isEmpty(groupBy) && _.isArrayLikeObject(groupBy)) {
             let columnGroup: string = groupBy.join(', ');
             query += ` GROUP BY ${columnGroup}`;
 
-            if (having && !_.isEmpty(having) && _.isArrayLikeObject(having)) {
+            if (having && !isEmpty(having) && _.isArrayLikeObject(having)) {
                 let havingClause: string = having.join(' AND ');
                 query += ` HAVING ${havingClause}`;
             }
         }
 
-        if (customOrders && !_.isEmpty(customOrders) && _.isArrayLikeObject(customOrders)) {
+        if (customOrders && !isEmpty(customOrders) && _.isArrayLikeObject(customOrders)) {
             query += ` ORDER BY ${customOrders}`;
         } else {
-            if (order && typeof order === 'string' && !_.isEmpty(order)) {
+            if (order && typeof order === 'string' && !isEmpty(order)) {
                 let orderColumn: string = order;
 
-                if (join && !_.isEmpty(join) && _.isArrayLikeObject(join)) {
+                if (join && !isEmpty(join) && _.isArrayLikeObject(join)) {
                     orderColumn = `${table}.${order}`;
                 }
 
@@ -485,7 +486,7 @@ export const getAll = ({
                 return resolve(resultData);
             }
 
-            if (!result || _.isEmpty(result)) {
+            if (!result || isEmpty(result)) {
                 return resolve(resultData);
             }
 
@@ -534,7 +535,7 @@ export const getDetail = ({
 
         let columns: string[] = [];
 
-        if (typeof table === 'string' && !_.isEmpty(table)) {
+        if (typeof table === 'string' && !isEmpty(table)) {
             columns = await checkColumn({ table });
         }
 
@@ -547,8 +548,8 @@ export const getDetail = ({
         let customFields: string[] = [];
         let customDropdownFields: string[] = [];
 
-        if (attributeColumn && !_.isEmpty(attributeColumn)) {
-            if (typeof table === 'string' && !_.isEmpty(table)) {
+        if (attributeColumn && !isEmpty(attributeColumn)) {
+            if (typeof table === 'string' && !isEmpty(table)) {
                 getCustomFields = await checkCustomField({ table });
             }
 
@@ -558,13 +559,13 @@ export const getDetail = ({
             requestHelper.filterColumn(customAttributes, customFields);
         }
 
-        if (columnSelect && !_.isEmpty(columnSelect) && _.isArrayLikeObject(columnSelect)) {
+        if (columnSelect && !isEmpty(columnSelect) && _.isArrayLikeObject(columnSelect)) {
             // filter data from all table columns, only keep selected columns
             let validColumn = _.intersection(columnSelect, columns);
             columns = validColumn;
         }
 
-        if (columnDeselect && !_.isEmpty(columnDeselect) && _.isArrayLikeObject(columnDeselect)) {
+        if (columnDeselect && !isEmpty(columnDeselect) && _.isArrayLikeObject(columnDeselect)) {
             if (columnDeselect.includes('*')) {
                 // filter data, exclude all columns
                 // let selectedColumn = _.difference(columns, deselectedColumn)
@@ -578,7 +579,7 @@ export const getDetail = ({
             }
         }
 
-        if (join && !_.isEmpty(join) && _.isArrayLikeObject(join)) {
+        if (join && !isEmpty(join) && _.isArrayLikeObject(join)) {
             // give prefix table to table columns
             let prefixColumn = columns.map((col: string) => {
                 return `${table}.${col}`;
@@ -589,7 +590,7 @@ export const getDetail = ({
 
         column = columns.join(', ');
 
-        if (attributeColumn && customFields && !_.isEmpty(customFields)) {
+        if (attributeColumn && customFields && !isEmpty(customFields)) {
             let customField: string = '';
             let setCustomField: string[] = [];
 
@@ -602,21 +603,21 @@ export const getDetail = ({
             }
 
             customField = setCustomField.join(', ');
-            column += (!_.isEmpty(column)) ? `, ${customField}` : `${customField}`;
+            column += (!isEmpty(column)) ? `, ${customField}` : `${customField}`;
         }
 
-        if (customColumns && !_.isEmpty(customColumns) && _.isArrayLikeObject(customColumns)) {
-            if (_.isEmpty(columns)) {
+        if (customColumns && !isEmpty(customColumns) && _.isArrayLikeObject(customColumns)) {
+            if (isEmpty(columns)) {
                 column += customColumns.join(', ');
             } else {
                 column += ', ' + customColumns.join(', ');
             }
         }
 
-        if (customColumns && !_.isEmpty(customColumns) && _.isArrayLikeObject(customColumns)) {
+        if (customColumns && !isEmpty(customColumns) && _.isArrayLikeObject(customColumns)) {
             let append: string = '';
 
-            if (column && !_.isEmpty(column)) {
+            if (column && !isEmpty(column)) {
                 append = ', ';
             }
 
@@ -625,20 +626,20 @@ export const getDetail = ({
 
         let query: string = `SELECT ${column}`
 
-        if (typeof table === 'string' && !_.isEmpty(table)) {
+        if (typeof table === 'string' && !isEmpty(table)) {
             query += ` FROM ${table}`;
         }
 
-        if (join && !_.isEmpty(join) && _.isArrayLikeObject(join)) {
+        if (join && !isEmpty(join) && _.isArrayLikeObject(join)) {
             let joinQuery: string = join.join(' ');
             query += ` ${joinQuery}`;
         }
 
-        if (conditions && !_.isEmpty(conditions)) {
+        if (conditions && !isEmpty(conditions)) {
             Object.keys(conditions).forEach((k: string) => {
                 let kCond: string = k;
 
-                if (typeof table === 'string' && !_.isEmpty(table) && join && !_.isEmpty(join) && _.isArrayLikeObject(join)) {
+                if (typeof table === 'string' && !isEmpty(table) && join && !isEmpty(join) && _.isArrayLikeObject(join)) {
                     kCond = `${table}.${k}`;
                 }
 
@@ -649,17 +650,17 @@ export const getDetail = ({
             query += ` WHERE ${queryCond}`;
         }
 
-        if (customConditions && !_.isEmpty(customConditions) && _.isArrayLikeObject(customConditions)) {
+        if (customConditions && !isEmpty(customConditions) && _.isArrayLikeObject(customConditions)) {
             queryCond = ' WHERE ' + customConditions.join(' AND ');
 
-            if ((conditions && !_.isEmpty(conditions))) {
+            if ((conditions && !isEmpty(conditions))) {
                 queryCond = ' AND ' + customConditions.join(' AND ');
             }
 
             query += `${queryCond}`;
         }
 
-        if (typeof table === 'string' && !_.isEmpty(table)) {
+        if (typeof table === 'string' && !isEmpty(table)) {
             query += ` LIMIT 1`;
 
             if (redis.service === 1) {
@@ -681,7 +682,7 @@ export const getDetail = ({
                 return resolve(resultData);
             }
 
-            if (!result || _.isEmpty(result)) {
+            if (!result || isEmpty(result)) {
                 return resolve(resultData);
             }
 
@@ -690,7 +691,7 @@ export const getDetail = ({
             resultData.limit = 1;
             resultData.page = 0;
 
-            if (typeof table === 'string' && !_.isEmpty(table) && redis.service === 1) {
+            if (typeof table === 'string' && !isEmpty(table) && redis.service === 1) {
                 const key: string = cacheKey || table;
                 const keyId: string = conditions && conditions?.id || '';
                 redisHelper.setDataQuery({ key: `${key}${keyId}`, field: query, value: resultData });
@@ -742,11 +743,11 @@ export const insertData = ({
         // check protected columns on submitted data
         let forbiddenColumns: string[] = _.intersection(protectedColumns, keys);
 
-        if (!_.isEmpty(forbiddenColumns)) {
+        if (!isEmpty(forbiddenColumns)) {
             return resolve(resultData);
         }
 
-        if (attributeColumn && !_.isEmpty(attributeColumn)) {
+        if (attributeColumn && !isEmpty(attributeColumn)) {
             getCustomFields = await checkCustomField({ table });
             customFields = _.map(getCustomFields, 'field_key');
             const getDropdownColumn = _.filter(getCustomFields, { 'field_type_id': 5 });
@@ -792,7 +793,7 @@ export const insertData = ({
                     let dropdownId: string | number = dropdownData[0] || '';
                     let dropdownValue: string = dropdownData[1] || '';
 
-                    if (_.isNumber(dropdownId) && parseInt(dropdownId) > 0 && !_.isEmpty(dropdownValue)) {
+                    if (_.isNumber(dropdownId) && parseInt(dropdownId) > 0 && !isEmpty(dropdownValue)) {
                         dataCustomField[k] = {id: dropdownId, value: dropdownValue}
                     }
                 }
@@ -801,7 +802,7 @@ export const insertData = ({
 
         let jsonDataCustom: string = JSON.stringify(dataCustomField);
 
-        if (!_.isEmpty(dataCustomField)) {
+        if (!isEmpty(dataCustomField)) {
             tempVal.push(jsonDataCustom);
         }
 
@@ -813,7 +814,7 @@ export const insertData = ({
                 return resolve(resultData);
             }
 
-            if (!result || _.isEmpty(result)) {
+            if (!result || isEmpty(result)) {
                 return resolve(resultData);
             }
 
@@ -821,7 +822,7 @@ export const insertData = ({
                 const keyData = `${table}:all`;
 
                 switch (true) {
-                    case (cacheKeys && !_.isEmpty(cacheKeys)):
+                    case (cacheKeys && !isEmpty(cacheKeys)):
                         cacheKeys.push(keyData);
                         redisHelper.deleteDataQuery({ key: cacheKeys });
                         break;
@@ -861,7 +862,7 @@ export const insertManyData = ({
         let timeChar: string[] = ['CURRENT_TIMESTAMP()', 'NOW()'];
         let nullChar: string[] = ['NULL'];
 
-        if (_.isEmpty(data) || data.length === 0) {
+        if (isEmpty(data) || data.length === 0) {
             return resolve(resultData);
         }
 
@@ -871,7 +872,7 @@ export const insertManyData = ({
         const diff: string[] = _.difference(Object.keys(data[0]), columns);
 
         // if there are invalid fields/columns
-        if (!_.isEmpty(diff)) {
+        if (!isEmpty(diff)) {
             return resolve(resultData);
         }
 
@@ -881,14 +882,14 @@ export const insertManyData = ({
         const keys: string[] = Object.keys(data[0]);
 
         // if key data empty
-        if (_.isEmpty(keys)) {
+        if (isEmpty(keys)) {
             return resolve(resultData);
         }
 
         // check protected columns on submitted data
         const forbiddenColumns: string[] = _.intersection(protectedColumns, keys);
 
-        if (!_.isEmpty(forbiddenColumns)) {
+        if (!isEmpty(forbiddenColumns)) {
             return resolve(resultData);
         }
 
@@ -935,7 +936,7 @@ export const insertManyData = ({
                 return resolve(resultData);
             }
 
-            if (!result || _.isEmpty(result)) {
+            if (!result || isEmpty(result)) {
                 return resolve(resultData);
             }
 
@@ -943,7 +944,7 @@ export const insertManyData = ({
                 const keyData = `${table}:all`;
 
                 switch (true) {
-                    case (cacheKeys && !_.isEmpty(cacheKeys)):
+                    case (cacheKeys && !isEmpty(cacheKeys)):
                         cacheKeys.push(keyData);
                         redisHelper.deleteDataQuery({ key: cacheKeys });
                         break;
@@ -983,7 +984,7 @@ export const insertDuplicateUpdateData = ({
         let timeChar: string[] = ['CURRENT_TIMESTAMP()', 'NOW()'];
         let nullChar: string[] = ['NULL'];
 
-        if (_.isEmpty(data) || data.length === 0) {
+        if (isEmpty(data) || data.length === 0) {
             return resolve(resultData);
         }
 
@@ -993,7 +994,7 @@ export const insertDuplicateUpdateData = ({
         const diff: string[] = _.difference(Object.keys(data[0]), columns);
 
         // if there are invalid fields/columns
-        if (!_.isEmpty(diff)) {
+        if (!isEmpty(diff)) {
             return resolve(resultData);
         }
 
@@ -1003,14 +1004,14 @@ export const insertDuplicateUpdateData = ({
         const keys: string[] = Object.keys(data[0]);
 
         // if key data empty
-        if (_.isEmpty(keys)) {
+        if (isEmpty(keys)) {
             return resolve(resultData);
         }
 
         // check protected columns on submitted data
         const forbiddenColumns: string[] = _.intersection(protectedColumns, keys);
 
-        if (!_.isEmpty(forbiddenColumns)) {
+        if (!isEmpty(forbiddenColumns)) {
             return resolve(resultData);
         }
 
@@ -1064,7 +1065,7 @@ export const insertDuplicateUpdateData = ({
                 return resolve(resultData);
             }
 
-            if (!result || _.isEmpty(result)) {
+            if (!result || isEmpty(result)) {
                 return resolve(resultData);
             }
 
@@ -1072,7 +1073,7 @@ export const insertDuplicateUpdateData = ({
                 const keyData = `${table}:all`;
 
                 switch (true) {
-                    case (cacheKeys && !_.isEmpty(cacheKeys)):
+                    case (cacheKeys && !isEmpty(cacheKeys)):
                         cacheKeys.push(keyData);
                         redisHelper.deleteDataQuery({ key: cacheKeys });
                         break;
@@ -1134,7 +1135,7 @@ export const updateData = ({
         let getCustomFields: any[] = [];
         let customDropdownFields: string[] = [];
 
-        if (attributeColumn && !_.isEmpty(attributeColumn)) {
+        if (attributeColumn && !isEmpty(attributeColumn)) {
             getCustomFields = await checkCustomField({ table });
             customFields = _.map(getCustomFields, 'field_key');
             const getDropdownColumn = _.filter(getCustomFields, { 'field_type_id': 5 });
@@ -1144,7 +1145,7 @@ export const updateData = ({
         }
 
         // reject('Update query is unsafe without data and condition')
-        if (_.isEmpty(data) || _.isEmpty(dataCustom) || _.isEmpty(conditions)) {
+        if (isEmpty(data) || isEmpty(dataCustom) || isEmpty(conditions)) {
             return resolve(resultData);
         }
 
@@ -1152,7 +1153,7 @@ export const updateData = ({
         // check protected columns on submitted data
         const forbiddenColumns = _.intersection(protectedColumns, keys);
 
-        if (!_.isEmpty(forbiddenColumns)) {
+        if (!isEmpty(forbiddenColumns)) {
             return resolve(resultData);
         }
 
@@ -1179,14 +1180,14 @@ export const updateData = ({
                 }
             }
 
-            if (_.isEmpty(dataVal) && dataVal !== 0) {
+            if (isEmpty(dataVal) && dataVal !== 0) {
                 setData.push(`${k} = NULL`);
             } else {
                 setData.push(`${k} = ${escape(dataVal)}`);
             }
         });
 
-        if (attributeColumn && !_.isEmpty(attributeColumn)) {
+        if (attributeColumn && !isEmpty(attributeColumn)) {
             let setJsonData: string[] = [];
 
             Object.keys(dataCustom).forEach(k => {
@@ -1197,7 +1198,7 @@ export const updateData = ({
                             let dropdownId: string | number = dropdownData[0] || '';
                             let dropdownValue: string = dropdownData[1] || '';
 
-                            if (_.isNumber(dropdownId) && parseInt(dropdownId) > 0 && !_.isEmpty(dropdownValue)) {
+                            if (_.isNumber(dropdownId) && parseInt(dropdownId) > 0 && !isEmpty(dropdownValue)) {
                                 setJsonData.push(`'$.${k}', JSON_OBJECT('id', ${escape(parseInt(dropdownId))}, 'value', ${escape(dropdownValue)})`);
                             }
                             break;
@@ -1210,7 +1211,7 @@ export const updateData = ({
 
             let joinData: string = setJsonData.join(', ');
 
-            if (!_.isEmpty(joinData)) {
+            if (!isEmpty(joinData)) {
                 setData.push(`${attributeColumn} = JSON_SET(COALESCE(${attributeColumn}, '{}'), ${joinData})`);
             }
         }
@@ -1229,7 +1230,7 @@ export const updateData = ({
             }
         });
 
-        if (attributeColumn && !_.isEmpty(attributeColumn)) {
+        if (attributeColumn && !isEmpty(attributeColumn)) {
             for (let k in customAttributes) {
                 if (customFields.includes(k)) {
                     setCond.push(`JSON_EXTRACT(LOWER(${attributeColumn}), '$.${k}') = LOWER(${escape(customAttributes[k])})`);
@@ -1246,7 +1247,7 @@ export const updateData = ({
                 return resolve(resultData);
             }
 
-            if (!result || _.isEmpty(result)) {
+            if (!result || isEmpty(result)) {
                 return resolve(resultData);
             }
 
@@ -1255,7 +1256,7 @@ export const updateData = ({
                 const keyId = conditions['id'] || '';
 
                 switch (true) {
-                    case (cacheKeys && !_.isEmpty(cacheKeys)):
+                    case (cacheKeys && !isEmpty(cacheKeys)):
                         cacheKeys.push(keyData);
 
                         if (keyId) {
@@ -1310,7 +1311,7 @@ export const deleteData = ({
         let query: string = `DELETE FROM ${table}`;
 
         // reject('Delete query is unsafe without condition')
-        if (_.isEmpty(conditions)) {
+        if (isEmpty(conditions)) {
             return resolve(resultData);
         }
 
@@ -1334,7 +1335,7 @@ export const deleteData = ({
                 return resolve(resultData);
             }
 
-            if (!result || _.isEmpty(result)) {
+            if (!result || isEmpty(result)) {
                 return resolve(resultData);
             }
 
@@ -1343,7 +1344,7 @@ export const deleteData = ({
                 const keyId = conditions['id'] || '';
 
                 switch (true) {
-                    case (cacheKeys && !_.isEmpty(cacheKeys)):
+                    case (cacheKeys && !isEmpty(cacheKeys)):
                         cacheKeys.push(keyData);
 
                         if (keyId) {

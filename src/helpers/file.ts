@@ -1,8 +1,7 @@
 import { Request } from "express";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
-import { dirname, resolve } from "path";
-import * as _ from "lodash";
-import { isJson } from "./value";
+import { dirname } from "path";
+import { isJson, isEmpty } from "./value";
 
 export const imageFilter = (req: Request & Express.Multer.File, file: any, cb: Function) => {
     const mimetype = file?.mimetype || '';
@@ -16,13 +15,13 @@ export const imageFilter = (req: Request & Express.Multer.File, file: any, cb: F
 
 export const readContent = (filename: string, subpath?: string): any => {
     try {
-        if (_.isEmpty(filename)) {
+        if (isEmpty(filename)) {
             return false;
         }
 
         let filedir = './';
 
-        if (subpath && !_.isEmpty(subpath)) {
+        if (subpath && !isEmpty(subpath)) {
             filedir += `${subpath}/`;
         }
 
@@ -37,13 +36,13 @@ export const readContent = (filename: string, subpath?: string): any => {
 
 exports.writeContent = (filename: string, data: any, subpath?: string) => {
     try {
-        if (_.isEmpty(filename) || _.isEmpty(data)) {
+        if (isEmpty(filename) || isEmpty(data)) {
             return false;
         }
 
         let filedir = dirname(require.main?.filename ?? __dirname) + '/';
 
-        if (subpath && !_.isEmpty(subpath)) {
+        if (subpath && !isEmpty(subpath)) {
             // replace multiple slash to single slash
             subpath = subpath.replace(/\/+/g, '/');
             // remove first & last slash

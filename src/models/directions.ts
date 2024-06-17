@@ -1,5 +1,4 @@
 import moment from "moment-timezone";
-import * as _ from "lodash";
 import * as dbQuery from "./../helpers/db-query";
 import config from "./../config";
 

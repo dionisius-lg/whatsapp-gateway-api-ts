@@ -1,6 +1,4 @@
 import { Request, Response } from "express";
-import moment from "moment-timezone";
-import config from "./../config";
 import * as model from "./../models/directions";
 import * as response from "./../helpers/response";
 

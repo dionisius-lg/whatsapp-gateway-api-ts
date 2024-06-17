@@ -1,5 +1,5 @@
 import redis, { Redis, RedisOptions } from "ioredis";
-import * as _ from "lodash";
+import { isEmpty } from "./../helpers/value";
 import config from ".";
 
 const { redis: { host, port, password, db, duration, service } } = config;
@@ -7,7 +7,7 @@ const { redis: { host, port, password, db, duration, service } } = config;
 const option: RedisOptions = { host, port, db, enableOfflineQueue: true };
 const channel: string = `__keyevent@${db}__:expired`;
 
-if (!_.isEmpty(password)) {
+if (!isEmpty(password)) {
     option.password = password;
 }
 
@@ -16,8 +16,8 @@ let client: Redis | any = null;
 let connected = false;
 
 if (service.toString() === '1') {
-    subscriber = new Redis(option);
-    client = new Redis(option);
+    subscriber = new redis(option);
+    client = new redis(option);
 
     subscriber.subscribe(channel);
 

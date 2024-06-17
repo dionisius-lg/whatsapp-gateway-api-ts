@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from "express";
-import * as _ from "lodash";
 import * as response from "./../helpers/response";
 
 /**

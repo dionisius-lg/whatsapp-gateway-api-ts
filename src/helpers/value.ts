@@ -1,5 +1,3 @@
-import * as _ from "lodash";
-
 export const randomString = (size: number = 32, numeric: boolean = false, specialchar: boolean = false): string => {
     let string = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
     let result = '';
@@ -26,7 +24,7 @@ export const isJson = (value: any): any | false => {
     try {
         result = JSON.parse(result);
 
-        if (typeof result === 'object' && !_.isEmpty(result)) {
+        if (typeof result === 'object' && !isEmpty(result)) {
             return result;
         }
 
@@ -51,3 +49,14 @@ export const isDomainAddress = (value: string): boolean => {
 
     return true;
 };
+
+export const isEmpty = (value: any): boolean => {
+    return (
+        value === undefined ||
+        value === null ||
+        (Array.isArray(value) && value.length === 0) ||
+        (typeof value === "object" && Object.keys(value).length === 0) ||
+        (typeof value === "string" && value.trim().length === 0) ||
+        (typeof value === "number" && value < 1)
+    );
+}
