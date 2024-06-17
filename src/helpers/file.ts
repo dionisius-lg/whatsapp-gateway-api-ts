@@ -1,6 +1,5 @@
 import { Request } from "express";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
-import { dirname } from "path";
 import { isJson, isEmpty } from "./value";
 
 export const imageFilter = (req: Request & Express.Multer.File, file: any, cb: Function) => {
@@ -34,13 +33,13 @@ export const readContent = (filename: string, subpath?: string): any => {
     }
 };
 
-exports.writeContent = (filename: string, data: any, subpath?: string) => {
+export const writeContent = (filename: string, data: any, subpath?: string): boolean => {
     try {
         if (isEmpty(filename) || isEmpty(data)) {
             return false;
         }
 
-        let filedir = dirname(require.main?.filename ?? __dirname) + '/';
+        let filedir = './';
 
         if (subpath && !isEmpty(subpath)) {
             // replace multiple slash to single slash

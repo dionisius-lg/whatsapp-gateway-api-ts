@@ -3,7 +3,7 @@ import morgan from "morgan";
 import winston from "winston";
 import "winston-daily-rotate-file";
 import { createStream } from "rotating-file-stream";
-import { dirname, resolve } from "path";
+import { resolve } from "path";
 import config from "./../config";
 import { isEmpty } from "./value";
 
@@ -30,7 +30,7 @@ export const access = (app: any) => {
     const stream = createStream((time) => name(time), {
         // rotate daily
         interval: '1d',
-        path: resolve(dirname(require.main?.filename ?? __dirname), 'logs/access')
+        path: resolve('./', 'logs/access')
     });
 
     morgan.token('body', (req: any) => {
@@ -50,7 +50,7 @@ export const access = (app: any) => {
 
 export const success = ({ from = 'server', message = '', result = null }: LogOptions) => {
     const transport = new winston.transports.DailyRotateFile({
-        filename: resolve(dirname(require.main?.filename ?? __dirname), 'logs/success/success-%DATE%.log'),
+        filename: resolve('./', 'logs/success/success-%DATE%.log'),
         datePattern: 'YYYY-MM-DD'
     });
 
@@ -73,7 +73,7 @@ export const success = ({ from = 'server', message = '', result = null }: LogOpt
 
 export const error = ({ from = 'server', message = '', result = null }: LogOptions) => {
     const transport = new winston.transports.DailyRotateFile({
-        filename: resolve(dirname(require.main?.filename ?? __dirname), 'logs/error/error-%DATE%.log'),
+        filename: resolve('./', 'logs/error/error-%DATE%.log'),
         datePattern: 'YYYY-MM-DD'
     });
 

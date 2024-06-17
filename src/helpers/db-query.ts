@@ -384,9 +384,6 @@ export const getAll = ({
                     }
                 }
             });
-
-            queryCond = setCond.join(' AND ');
-            query += ` WHERE ${queryCond}`;
         }
 
         if (attributeColumn && !isEmpty(attributeColumn)) {
@@ -410,7 +407,7 @@ export const getAll = ({
         }
 
         queryCond = setCond.join(' AND ');
-        query += isEmpty(queryCond) ? ` WHERE ${queryCond}` : '';
+        query += !isEmpty(queryCond) ? ` WHERE ${queryCond}` : '';
 
         if (customConditions && !isEmpty(customConditions) && _.isArrayLikeObject(customConditions)) {
             queryCond = ' WHERE ' + customConditions.join(' AND ');
