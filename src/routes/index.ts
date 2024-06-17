@@ -8,7 +8,7 @@ import { authenticateKey } from "./../middleware/auth";
 
 const router: Router = express.Router();
 const basename: string = path.basename(__filename);
-const publicPath: string[] = ['/webhooks', '/files,', '/test'];
+const publicPath: string[] = ['/webhooks', '/files'];
 const { env } = config;
 
 const matchInArray = (string: string, expression: RegExp[]): boolean => {
@@ -51,6 +51,7 @@ router.use('*', (req: Request, res: Response) => {
 });
 
 if (env === 'production') {
+    // override error
     router.use((error: any, req: Request, res: Response, next: NextFunction) => {
         if (error instanceof SyntaxError) {
             return response.sendBadRequest(res);
