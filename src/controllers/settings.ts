@@ -262,10 +262,10 @@ export const getProfilePhoto = async (req: Request, res: Response) => {
 
     try {
         const { data } = await model.getDetail({ code: 'WHATSAPP_PROFILE_PHOTO' });
-console.log('----------------------', data)
+
         if (data) {
             const { attributes } = data;
-console.log('----------------------', attributes)
+
             if (isJson(attributes) && attributes.length > 0) {
                 // if (existsSync(attributes?.path + attributes?.file_name)) {
                     const encrypted = encrypt(attributes);
