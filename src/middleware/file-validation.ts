@@ -14,7 +14,7 @@ interface FileConfig {
     filemax?: number;
 }
 
-export const singleFile = ({ fieldname, subpath = '', filesize = 1, filefilter }: FileConfig) => {
+const singleFile = ({ fieldname, subpath = '', filesize = 1, filefilter }: FileConfig) => {
     return (req: Request, res: Response, next: NextFunction) => {
         const ymd: string = moment(new Date()).format('YYYY/MM/DD');
 
@@ -55,7 +55,7 @@ export const singleFile = ({ fieldname, subpath = '', filesize = 1, filefilter }
     }
 };
 
-export const mutiFile = ({ fieldname, subpath = '', filesize = 1, filefilter, filemax = 1 }: FileConfig) => {
+const mutiFile = ({ fieldname, subpath = '', filesize = 1, filefilter, filemax = 1 }: FileConfig) => {
     return (req: Request, res: Response, next: NextFunction) => {
         const ymd: string = moment(new Date()).format('YYYY/MM/DD');
 
@@ -94,4 +94,9 @@ export const mutiFile = ({ fieldname, subpath = '', filesize = 1, filefilter, fi
             next();
         });
     }
-}
+};
+
+export default {
+    singleFile,
+    mutiFile
+};

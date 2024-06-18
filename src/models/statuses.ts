@@ -36,6 +36,15 @@ export const insertData = async (data: Data) => {
     return await dbQuery.insertData({ table, data, protectedColumns });
 };
 
+export const insertManyData = async (data: Data[]) => {
+    const protectedColumns = ['id']
+    return await dbQuery.insertManyData({ table, data, protectedColumns });
+}
+
+export const insertUpdateData = async (data: Data[]) => {
+    return await dbQuery.insertDuplicateUpdateData({ table, data });
+}
+
 export const updateData = async (data: Data, conditions: Conditions) => {
     const protectedColumns = ['id'];
     return await dbQuery.updateData({ table, data, conditions, protectedColumns});
