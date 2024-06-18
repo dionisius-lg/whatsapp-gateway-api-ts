@@ -1,5 +1,5 @@
-import moment from "moment-timezone";
 import { Request, Response } from "express";
+import moment from "moment-timezone";
 import { createReadStream, unlinkSync, existsSync } from "fs";
 import formData from "form-data";
 import * as model from "./../models/settings";
@@ -267,7 +267,7 @@ export const getProfilePhoto = async (req: Request, res: Response) => {
             const { attributes } = data;
 
             if (isJson(attributes) && attributes.length > 0) {
-                // if (existsSync(attributes?.path + attributes?.file_name)) {
+                if (existsSync(attributes?.path + attributes?.file_name)) {
                     const encrypted = encrypt(attributes);
 
                     let link = `${protocol}://${hostname}`;
@@ -285,7 +285,7 @@ export const getProfilePhoto = async (req: Request, res: Response) => {
 
                     const result = { photo: { link } };
                     return response.sendSuccess(res, result);
-                // }
+                }
             }
         }
 
