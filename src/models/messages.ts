@@ -8,14 +8,9 @@ const table = 'messages';
 
 moment.tz.setDefault(timezone);
 
-interface ParsedQs {
-    [key: string]: string | string[] | ParsedQs | ParsedQs[] | undefined;
-}
-
 interface Conditions {
-    [key: string]: string | string[] | ParsedQs | ParsedQs[] | undefined;
+    [key: string]: any;
 }
-
 interface Data {
     [key: string]: any;
 }
