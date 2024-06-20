@@ -19,7 +19,7 @@ interface MessageTemplateData {
     body: string | null;
     footer: any;
     buttons: string | null;
-    status_id?: number; // Make status_id optional since it's dynamically set
+    status_id?: number;
 }
 
 /**
@@ -163,7 +163,7 @@ export const createTemplate = async (req: Request, res: Response) => {
 export const updateTemplate = async (req: Request, res: Response) => {
     const { body, params: { id } } = req;
 
-    let messageTemplateData = {
+    let messageTemplateData: MessageTemplateData = {
         label: body?.label || null,
         category_id: body?.category_id || null,
         language_id: body?.language_id || null,

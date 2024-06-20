@@ -7,19 +7,15 @@ const table = 'directions';
 
 moment.tz.setDefault(timezone);
 
-interface ParsedQs {
-    [key: string]: string | string[] | ParsedQs | ParsedQs[] | undefined;
-}
-
 interface Conditions {
-    [key: string]: string | string[] | ParsedQs | ParsedQs[] | undefined;
+    [key: string]: any;
 }
-
 interface Data {
     [key: string]: any;
 }
 
 export const getAll = async (conditions: Conditions) => {
+    console.log(conditions)
     const conditionTypes = {
         'like': ['name']
     };

@@ -6,7 +6,7 @@ import { randomString } from "./helpers/value";
 import * as logger from "./helpers/logger";
 
 const app: Express = express();
-const { env, port, file_dir } = config;
+const { env, port } = config;
 
 // enable parsing json
 app.use(express.json());
