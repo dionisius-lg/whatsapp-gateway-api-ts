@@ -6,7 +6,7 @@ import * as messageNotificationsModel from "./../models/message-notifications";
 import * as webhookClientsModel from "./../models/webhook-clients";
 import * as response from "./../helpers/response";
 import * as logger from "./../helpers/logger";
-import webhookClient from "./../helpers/webhook-client";
+import webhookClientApi from "./../helpers/webhook-client-api";
 import whatsappMediaApi from "./../helpers/whatsapp-media-api";
 import config from "./../config";
 
@@ -32,7 +32,7 @@ export const inbound = async (req: Request, res: Response) => {
         const { data } = await webhookClientsModel.getAll({ is_active: 1 });
 
         if (data) {
-            const send = await webhookClient.send({ clients: data, body });
+            const send = await webhookClientApi.send({ clients: data, body });
 
             switch (true) {
                 case (send.success > 0):
@@ -109,7 +109,7 @@ export const inboundStatus = async (req: Request, res: Response) => {
         const { data } = await webhookClientsModel.getAll({ is_active: 1 });
 
         if (data) {
-            const send = await webhookClient.send({ clients: data, body });
+            const send = await webhookClientApi.send({ clients: data, body });
 
             switch (true) {
                 case (send.success > 0):
@@ -219,7 +219,7 @@ export const inboundMessage = async (req: Request, res: Response) => {
         const { data } = await webhookClientsModel.getAll({ is_active: 1 });
 
         if (data) {
-            const send = await webhookClient.send({ clients: data, body });
+            const send = await webhookClientApi.send({ clients: data, body });
 
             switch (true) {
                 case (send.success > 0):

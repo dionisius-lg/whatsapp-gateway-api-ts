@@ -73,6 +73,6 @@ const send = async ({ clients = [], body = {} }: SendOptions): Promise<SendResul
     return result;
 };
 
-const webhookClient = { send };
+const webhookClientApi = { send };
 
-export default webhookClient;
+export default webhookClientApi;
