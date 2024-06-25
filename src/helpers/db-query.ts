@@ -264,7 +264,7 @@ export const getAll = ({
         let order: boolean | string = conditions && conditions?.order || columns[0];
             order = typeof order === 'string' && columns.includes(order) ? order : columns[0];
 
-        if (typeof conditions?.order === 'boolean' && conditions?.oredr === false) {
+        if (typeof conditions?.order === 'boolean' && conditions?.order === false) {
             order = false;
         }
 
