@@ -55,8 +55,20 @@ export const isEmpty = (value: any): boolean => {
         value === undefined ||
         value === null ||
         (Array.isArray(value) && value.length === 0) ||
-        (typeof value === "object" && Object.keys(value).length === 0) ||
-        (typeof value === "string" && value.trim().length === 0) ||
-        (typeof value === "number" && value < 1)
+        (typeof value === 'object' && Object.keys(value).length === 0) ||
+        (typeof value === 'string' && value.trim().length === 0) ||
+        (typeof value === 'number' && value < 1)
     );
+}
+
+export const maskSensitiveData = (data: Record<string, any>): Record<string, any> => {
+    let sensitiveKeys: string[] = ['secret', 'password'];
+
+    for (let [key, val] of Object.entries(data)) {
+        if (sensitiveKeys.includes(key.toLowerCase()) && typeof val === 'string') {
+            data[key] = val.replace(/./g, '*');
+        }
+    }
+
+    return data;
 }

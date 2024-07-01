@@ -5,7 +5,7 @@ import "winston-daily-rotate-file";
 import { createStream } from "rotating-file-stream";
 import { resolve } from "path";
 import config from "./../config";
-import { isEmpty } from "./value";
+import { isEmpty, maskSensitiveData } from "./value";
 
 const { timezone } = config;
 
@@ -34,7 +34,17 @@ export const access = (app: any) => {
     });
 
     morgan.token('body', (req: any) => {
-        return req.body ? JSON.stringify(req.body) : '';
+        let { body } = req;
+
+        if (body) {
+            if (typeof body === 'object') {
+                body = maskSensitiveData(body);
+            }
+
+            return JSON.stringify(body);
+        }
+
+        return '';
     });
 
     morgan.token('date', () => {
